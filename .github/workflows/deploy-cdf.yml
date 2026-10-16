@@ -36,6 +36,15 @@ jobs:
       - name: Build React application
         run: npm run build
 
+      - name: Verify generated assets
+        run: |
+          echo "Contenido de dist/assets:"
+          ls -lah dist/assets/
+
+          echo "Verificando imagen de fondo:"
+          test -s dist/assets/login-fleet-background-CqbQwtWm.png
+          file dist/assets/login-fleet-background-CqbQwtWm.png
+
       - name: Copy .htaccess if present
         run: |
           if [ -f .htaccess ]; then
