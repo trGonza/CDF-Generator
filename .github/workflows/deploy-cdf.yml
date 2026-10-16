@@ -23,6 +23,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          lfs: true
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -36,15 +38,27 @@ jobs:
       - name: Build React application
         run: npm run build
 
-      - name: Verify generated assets
+      - name: Verify generated images
         run: |
-          echo "Contenido de dist/assets:"
-          ls -lah dist/assets/
-
-          echo "Verificando imagen de fondo:"
-          test -s dist/assets/login-fleet-background-CqbQwtWm.png
-          file dist/assets/login-fleet-background-CqbQwtWm.png
-
+          echo "Verificando imágenes generadas por Vite..."
+      
+          find dist/assets -maxdepth 1 -type f \
+            \( -name '*.png' -o -name '*.jpg' -o -name '*.jpeg' -o -name '*.webp' \) \
+            -exec ls -lh {} \;
+      
+          for image in dist/assets/*.png; do
+            [ -e "$image" ] || continue
+      
+            size=$(stat -c%s "$image")
+      
+            if [ "$size" -lt 1000 ]; then
+              echo "ERROR: Imagen incompleta o inválida: $image ($size bytes)"
+              exit 1
+            fi
+          done
+      
+          echo "Verificación de imágenes completada."
+        
       - name: Copy .htaccess if present
         run: |
           if [ -f .htaccess ]; then
