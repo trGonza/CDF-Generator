@@ -1,0 +1,10 @@
+{
+  "description": "Streamline the generation of fumigation certificates by automating folio creation and document formatting, saving time and ensuring accuracy for users.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
