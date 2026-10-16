@@ -1,0 +1,77 @@
+
+name: Deploy CDF Web
+
+on:
+  push:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-cdf
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy CDF to Neubox
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build React application
+        run: npm run build
+
+      - name: Copy .htaccess if present
+        run: |
+          if [ -f .htaccess ]; then
+            cp .htaccess dist/.htaccess
+          fi
+
+      - name: Test FTP connection
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+        run: |
+          echo "Testing FTP server..."
+          nc -vz -w 10 "$FTP_SERVER" 21
+
+      - name: Test FTPS connection
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+        run: |
+          timeout 15 openssl s_client \
+            -starttls ftp \
+            -connect "${FTP_SERVER}:21" \
+            -servername "$FTP_SERVER" \
+            -brief </dev/null
+
+      - name: Deploy to Neubox
+        uses: SamKirkland/FTP-Deploy-Action@v4.4.0
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftps
+          port: 21
+          local-dir: ./dist/
+          server-dir: ./
+          dry-run: true
+          timeout: 120000
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
